@@ -1,5 +1,5 @@
 fn main() {
-    let input = include_str!("./input.txt");
+    let input = include_str!("./input/input.txt");
     println!("{:?}", part_one(input));
 }
 
@@ -21,7 +21,7 @@ mod tests {
 
     #[test]
     fn day_one_part_one() {
-        let test_input = include_str!("./part1-test.txt");
+        let test_input = include_str!("./input/part1-test.txt");
 
         let expected = 142;
         let result = part_one(test_input);
