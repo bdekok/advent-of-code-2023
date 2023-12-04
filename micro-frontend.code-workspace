@@ -1,0 +1,12 @@
+{
+  "folders": [
+    {
+      "name": "Advent of Code - Typescript",
+      "path": "./typescript"
+    },
+    {
+      "name": "Advent of Code - Rust",
+      "path": "./rust"
+    },
+  ]
+}
