@@ -4,34 +4,28 @@ import { getInputOfCurrentDay } from "../utils.ts";
 export async function getResults(): Promise<Result> {
   const input = await getInputOfCurrentDay(import.meta.url);
   return {
-    exerciseOne: 0,
+    exerciseOne: exerciseOne(input),
     exerciseTwo: exerciseTwo(input),
   };
 }
 
-class PlantRange {
-  minSource: number;
-  maxSource: number;
-  minDestination: number;
+function inRange(currentSeedNumber: number, min: number, max: number) {
+  return currentSeedNumber >= min && currentSeedNumber < max;
+}
+function getDestination(sourceNumber: number, min: number, minDestination: number) {
+  return sourceNumber - min + minDestination;
+}
 
-  constructor(minSource: number, offset: number, minDestination: number) {
-    this.minSource = minSource;
-    this.maxSource = minSource + offset;
-    this.minDestination = minDestination;
-  }
-
-  inRange(sourceNumber: number) {
-    return sourceNumber >= this.minSource && sourceNumber <= this.maxSource;
-  }
-  getDestination(sourceNumber: number) {
-    return sourceNumber - this.minSource + this.minDestination;
-  }
+interface PlantRange {
+  min: number;
+  max: number;
+  destination: number;
 }
 interface PlantMap {
   [sourceKey: string]: {
     destinationKey: string;
     range: PlantRange[];
-  }
+  };
 }
 
 const startKey = "seed";
@@ -56,8 +50,12 @@ function parseInput(inputRows: string[]): PlantMap {
       };
       continue;
     }
-    const [minDestination, minSource, offset] = lineValue.split(" ").map((x) => parseInt(x));
-    const plantRange = new PlantRange(minSource, offset, minDestination);
+    const [destination, min, offset] = lineValue.split(" ").map((x) => parseInt(x));
+    const plantRange: PlantRange = {
+      min,
+      max: min + offset,
+      destination,
+    };
 
     plantMap[sourceKey].range.push(plantRange);
   }
@@ -70,26 +68,22 @@ const getStartSeeds = (seeds: string): number[] => {
   return seedsString.split(" ").map((seed: string) => parseInt(seed));
 };
 
-const getStartSeedsRange = (seeds: number[]): number[] => {
-  const [firstStart, firstRange, secondStart, secondRange] = seeds;
+const getLowestStartSeedsRange = (plantMap: PlantMap, seeds: number[]): number => {
+  let lowestSeed = -1;
 
-  const getRange = (start: number, range: number) => new Array(range).fill(0).map((_, index) => start + index)
+  for (let seedIndex = 0; seedIndex < seeds.length; seedIndex = seedIndex + 2) {
+    const startSeed = seeds[seedIndex];
+    const seedLength = seeds[seedIndex + 1];
 
-  return [...getRange(firstStart, firstRange), ...getRange(secondStart, secondRange)];
-}
-
-const traverseSeed = (plantMap: PlantMap, key: string, seed: number): number => {
-  if (key === endKey) {
-    return seed;
+    for (let seed = startSeed; seed < startSeed + seedLength; seed++) {
+      const result: number = traverseSeedWithStack(plantMap, seed);
+      if (lowestSeed === -1 || result < lowestSeed) {
+        lowestSeed = result;
+      }
+    }
   }
 
-  const { range, destinationKey } = plantMap[key];
-  const withinRange = range.find((plantRange) => plantRange.inRange(seed));
-  if (withinRange) {
-    const destination = withinRange.getDestination(seed);
-    return traverseSeed(plantMap, destinationKey, destination);
-  }
-  return traverseSeed(plantMap, destinationKey, seed);
+  return lowestSeed!;
 };
 
 const traverseSeedWithStack = (plantMap: PlantMap, seed: number): number => {
@@ -103,46 +97,38 @@ const traverseSeedWithStack = (plantMap: PlantMap, seed: number): number => {
       return seed;
     }
 
-    const { range, destinationKey } = plantMap[key];
-    const withinRange = range.find((plantRange) => plantRange.inRange(seed));
-
-    if (withinRange) {
-      const destination = withinRange.getDestination(seed);
-      stack.push({ key: destinationKey, seed: destination });
+    const plantWithinRange = plantMap[key].range.find((plant) =>
+      inRange(seed, plant.min, plant.max)
+    );
+    if (plantWithinRange) {
+      const { min, destination } = plantWithinRange;
+      const newSeed = getDestination(seed, min, destination);
+      stack.push({ key: plantMap[key].destinationKey, seed: newSeed });
     } else {
-      stack.push({ key: destinationKey, seed });
+      stack.push({ key: plantMap[key].destinationKey, seed });
     }
   }
 
-  return -1; 
-}
-
+  return -1;
+};
 
 export function exerciseOne(input: string): number {
   const [start, ...inputRows] = input.trim().split("\n");
 
   const plantMap = parseInput(inputRows);
-  const startSeeds = getStartSeeds(start);  
-  const results = startSeeds.map((seed) => traverseSeedWithStack(plantMap, seed))
+  const startSeeds = getStartSeeds(start);
 
-  return Math.min(...results);
+  const result = startSeeds.map((seed) => traverseSeedWithStack(plantMap, seed));
+
+  return Math.min(...result);
 }
 
 export function exerciseTwo(input: string): number {
+  console.log("start", performance.now());
   const [start, ...inputRows] = input.trim().split("\n");
 
   const plantMap = parseInput(inputRows);
-  const startSeeds = getStartSeedsRange(getStartSeeds(start));
- 
-  let lowestSeed: number | undefined;
-
-  for (const seed of startSeeds) {
-    let result: number | undefined = traverseSeedWithStack(plantMap, seed);
-    if (!lowestSeed || result < lowestSeed) {
-      lowestSeed = result;
-    }
-    result = undefined;
-  }
-
-  return lowestSeed!;
+  const result = getLowestStartSeedsRange(plantMap, getStartSeeds(start));
+  console.log("end", performance.now());
+  return result;
 }
