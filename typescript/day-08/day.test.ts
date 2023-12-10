@@ -1,6 +1,6 @@
 import { assertEquals } from "../depts.ts";
-import { getTestInputOfCurrentDay } from "../utils.ts";
-import { exerciseOne } from "./day.ts";
+import { getInputOfCurrentDay, getTestInputOfCurrentDay } from "../utils.ts";
+import { exerciseOne, exerciseTwo } from "./day.ts";
 
 Deno.test("Exercise one - 1", async () => {
   const testData = await getTestInputOfCurrentDay(import.meta.url);
@@ -15,7 +15,13 @@ Deno.test("Exercise one - 2", async () => {
 });
 
 Deno.test('Exercise one - answer', async () => {
-  const testData = await getTestInputOfCurrentDay(import.meta.url, "input.txt");
+  const testData = await getInputOfCurrentDay(import.meta.url);
   const expected = 22357;
   assertEquals(exerciseOne(testData), expected);
+})
+
+Deno.test('Exercise two', async () => {
+  const testData = await getTestInputOfCurrentDay(import.meta.url, "input-test-3.txt");
+  const expected = 6;
+  assertEquals(exerciseTwo(testData), expected);
 })
